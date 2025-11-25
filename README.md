@@ -162,6 +162,9 @@ Run the API using:
 
 ## 🧩 Architecture Overview
 
+## 🧩 Architecture Overview
+
+```
                      Raw Letterboxd Data
                              |
                              v
@@ -188,6 +191,7 @@ Run the API using:
                               |
                               v
                        Clients / Apps
+```
 
 ## Summary
 
