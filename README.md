@@ -162,8 +162,6 @@ Run the API using:
 
 ## 🧩 Architecture Overview
 
-## 🧩 Architecture Overview
-
 ```
                      Raw Letterboxd Data
                              |
