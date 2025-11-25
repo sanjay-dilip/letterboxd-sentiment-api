@@ -41,10 +41,10 @@ After cleaning, the dataset produces:
 - loose 3-class sentiment (pos/neu/neg)
 - strict binary sentiment (pos/neg)
 - ~3500 total reviews
-- ~514 strict weak-labeled reviews
-- 49 human-labeled samples for real evaluation
+- ~514 strict weak-labelled reviews
+- 49 human-labelled samples for real evaluation
 
-All processed files are saved into `data/processed/`.
+All processed files are saved in `data/processed/`.
 
 ## 🔧 Data Pipeline (src/preprocess + src/prepare_data)
 
@@ -74,7 +74,7 @@ Explores the cleaned dataset:
 
 Runs a simple baseline:
 - loads strict binary labels
-- filters very short reviews
+- filters concise reviews
 - balances classes
 - trains TF-IDF + Logistic Regression
 - prints validation accuracy
@@ -89,12 +89,12 @@ The baseline code:
 - loads the cleaned dataset
 - filters by strict labels
 - balances positive and negative
-- vectorizes text
+- vectorises text
 - trains Logistic Regression
 - evaluates on a validation split
 - exposes a predict function for the API
 
-Baseline accuracy on human-labeled samples is about 39%.
+Baseline accuracy on human-labelled samples is about 39%.
 
 ### DistilBERT Transformer Model
 
@@ -107,13 +107,13 @@ Improves the model by teaching it real sentiment before applying it to noisy Let
 Uses strict labels to adapt the model to the domain.
 
 **The model:**
-- tokenizes the reviews
+- tokenises the reviews
 - trains for 3 epochs
 - runs on CPU
-- saves model + tokenizer into models/distilbert/
+- saves model + tokeniser into `models/distilbert/`
 - integrates with the API
 
-DistilBERT accuracy on human-labeled samples is about 45%, better than the baseline.
+DistilBERT accuracy on human-labelled samples is about 45%, better than the baseline.
 
 ## 🧪 Manual Evaluation
 
@@ -149,7 +149,7 @@ and
 `"model_type": "transformer"`
 
 ### /movie-summary
-Summarizes a movie using all reviews:
+Summarises a movie using all reviews:
 - count of positive and negative
 - average sentiment
 - rating overview
@@ -193,4 +193,4 @@ Run the API using:
 
 ## Summary
 
-This project builds a complete sentiment analysis system for Letterboxd reviews using both a TF-IDF baseline and a DistilBERT transformer. It handles noisy rating-based labels with strict filtering and includes a small human-labeled set for real evaluation. Everything is served through a FastAPI backend with endpoints for text analysis, movie summaries, and comparisons.
+This project builds a complete sentiment analysis system for Letterboxd reviews using both a TF-IDF baseline and a DistilBERT transformer. It handles noisy rating-based labels with strict filtering and includes a small human-labelled set for real evaluation. Everything is served through a FastAPI backend with endpoints for text analysis, movie summaries, and comparisons.
