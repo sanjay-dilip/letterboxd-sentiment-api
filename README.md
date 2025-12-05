@@ -1,138 +1,121 @@
-# 🎬 Letterboxd Movie Sentiment API – Baseline, DistilBERT, Weak Labels, Manual Evaluation, FastAPI
+# 🎬 Letterboxd Movie Sentiment API
+
+This project builds a sentiment system for Letterboxd reviews. The goal is to handle messy, sarcastic, emotional reviews and still predict whether the writer felt positive or negative about a movie. The project covers data cleaning, handling weak labels, two models, a small human-evaluation set, and a FastAPI backend.
 
 ##  📌 Overview
 
-This project builds a sentiment analysis system for Letterboxd movie reviews. Letterboxd reviews are messy, sarcastic, emotional, and often don’t match the star rating.
-The goal is to build a full NLP pipeline that predicts whether a movie review is positive or negative, even when labels are noisy.
+Letterboxd reviews are not straightforward. People joke, use slang, flip meanings, and sometimes the star rating doesn’t match the text. The whole point of this project is to see how far we can get with:
 
-People review movies in many different ways, and simple rules aren’t enough.
-A good sentiment model should understand:
-- how a review is written
-- what opinion the user expresses
-- how to deal with slang, jokes, and sarcasm
-- how to handle weak labels like star ratings
+- weak labels from star ratings
+- a simple baseline model
+- a transformer fine-tuned on this dataset
+- a small set of human-labelled samples
+- an API that serves the predictions
 
-This project brings all these ideas together.
-It uses a scraped Letterboxd dataset and includes:
-- a data cleaning pipeline
-- strict weak-label generation
-- a baseline TF-IDF + Logistic Regression model
-- a transformer model (DistilBERT)
-- external pretraining on SST-2
-- a manual evaluation set
-- a FastAPI backend
+The pipeline puts everything together from raw data to an actual service you can hit with a request.
 
 ## 🗂️ Data
 
-Source: A CSV of scraped Letterboxd reviews.
+The dataset is a scraped collection of Letterboxd reviews with fields such as:
 
-Fields include:
-- Movie name
-- Release year
-- Review text
-- Reviewer name
-- Broken Unicode star ratings
-- Review date
-- Like and comment counts
+- movie name
+- release year
+- review text
+- reviewer name
+- broken Unicode star ratings
+- review date
+- like and comment counts
 
-After cleaning, the dataset produces:
+After cleaning, the processed dataset includes:
+
 - numeric star ratings
 - clean review text
-- loose 3-class sentiment (pos/neu/neg)
-- strict binary sentiment (pos/neg)
+- loose 3-class sentiment
+- strict binary sentiment
 - ~3500 total reviews
-- ~514 strict weak-labelled reviews
-- 49 human-labelled samples for real evaluation
+- ~514 strict weak-labeled reviews
+- 49 manually labeled samples for evaluation
 
-All processed files are saved in `data/processed/`.
+Processed files live in `data/processed/`.
 
-## 🔧 Data Pipeline (src/preprocess + src/prepare_data)
+## 🔧 Data Pipeline
 
-The pipeline handles all preparation stages:
-- Load the raw reviews
-- Fix corrupted Unicode star ratings
-- Convert stars to numeric ratings
-- Create strict binary labels
-- Clean the review text
-- Parse dates
-- Filter rows with missing review text
-- Save the cleaned dataset into `data/processed/`
+The pipeline handles the full prep flow:
 
-This keeps everything reproducible and keeps notebooks and training scripts clean.
+- load raw reviews
+- fix corrupted star rating characters
+- convert stars to numbers
+- build strict binary labels
+- clean the review text
+- parse dates
+- remove unusable rows
+- save final data into data/processed
 
-## 🔎 Notebooks Breakdown
+This keeps the rest of the project neat and reproducible.
+
+## 📒 Notebooks
+
 ### 1. EDA
 
-Explores the cleaned dataset:
-- rating distribution
-- strict label distribution
+Looks at:
+- rating spread
+- strict label balance
 - review length patterns
-- check for corrupted characters
-- sample review inspection
+- sample reviews
+- checks for any strange characters
 
 ### 2. Baseline Model Training
 
-Runs a simple baseline:
-- loads strict binary labels
-- filters concise reviews
-- balances classes
-- trains TF-IDF + Logistic Regression
-- prints validation accuracy
-- saves model and vectorizer
+Covers:
+- loading strict labels
+- basic balancing
+- TF-IDF vectorization
+- Logistic Regression training
+- simple validation
 
-This acts as the baseline sentiment classifier.
+The baseline is used as a reference point for the transformer.
 
-## 🤖 Baseline and Transformer Models
+## 🤖 Models
+
 ### Baseline: TF-IDF + Logistic Regression
 
-The baseline code:
-- loads the cleaned dataset
-- filters by strict labels
-- balances positive and negative
-- vectorises text
-- trains Logistic Regression
-- evaluates on a validation split
-- exposes a predict function for the API
+This model:
+- uses strict binary labels
+- vectorizes text with TF-IDF
+- trains a Logistic Regression classifier
+- gives ~39% accuracy on the manual evaluation set
 
-Baseline accuracy on human-labelled samples is about 39%.
+Not great, but it shows how noisy weak labels really are.
 
 ### DistilBERT Transformer Model
 
-The transformer training includes two stages:
+Training happens in two steps:
 
-**Stage 1: External Pretraining (SST-2)**
-Improves the model by teaching it real sentiment before applying it to noisy Letterboxd data.
+**1. External pretraining on SST-2**
+**2.Fine-tuning on Letterboxd strict labels**
 
-**Stage 2: Fine-tuning on Letterboxd**
-Uses strict labels to adapt the model to the domain.
-
-**The model:**
-- tokenises the reviews
+The model:
+- tokenises review text
 - trains for 3 epochs
 - runs on CPU
-- saves model + tokeniser into `models/distilbert/`
-- integrates with the API
+- saves weights and tokeniser
 
-DistilBERT accuracy on human-labelled samples is about 45%, better than the baseline.
+It reaches ~45% accuracy on the manually labelled set.
+Better than the baseline, but still challenged by neutral, sarcastic, and domain-specific language.
 
 ## 🧪 Manual Evaluation
 
-Since star ratings are weak labels, the project includes a small gold-standard test set.
+Weak labels only go so far. To get a realistic view, a small set of review texts (49 samples) was labeled by hand.
 
-**Steps:**
-- Sample 150 strict-label reviews
-- Manually label 50 reviews with real sentiment
-- Evaluate both models on these true labels
+Results:
+- Baseline: ~39%
+- DistilBERT: ~45%
 
-**Results:**
-- Baseline: ~39% accuracy
-- DistilBERT: ~45% accuracy
-
-Neutral reviews are hard because the models were trained only on positive and negative, but this highlights the difference between weak labels and true sentiment.
+This difference highlights where transformers help and where weak labels fall short.
 
 ## 🌐 FastAPI Service
 
-The FastAPI backend exposes:
+The API exposes a few routes:
 
 ### /health
 Quick check that the API is running.
@@ -141,21 +124,13 @@ Quick check that the API is running.
 Takes raw text and returns:
 - predicted label
 - probabilities
-- which model was used
-
-You can switch between:
-`"model_type": "baseline"`
-and
-`"model_type": "transformer"`
+- which model was used (baseline or transformer)
 
 ### /movie-summary
-Summarises a movie using all reviews:
-- count of positive and negative
-- average sentiment
-- rating overview
+Aggregates sentiment for a specific movie.
 
 ### /compare-movies
-Compares two movies using analytics functions.
+Compares two movies based on review sentiment.
 
 Run the API using:
 `uvicorn api.main:app --reload`
@@ -164,33 +139,34 @@ Run the API using:
 
 ```
                      Raw Letterboxd Data
-                             |
-                             v
-                   Data Cleaning Pipeline
-               - rating fix
-               - text cleaning
-               - strict labels
-                             |
-                             v
-           ---------------------------------------
-           |                                     |
-           v                                     v
-   Baseline Model                        DistilBERT Transformer
-   - TF-IDF                              - SST-2 pretraining
-   - Logistic Regression                 - LBX fine-tuning
-   - 39% on manual eval                  - 45% on manual eval
-           |                                     |
-           ------------------   -------------------
-                              v
-                        FastAPI Backend
-                    /analyze-text (baseline/bert)
-                    /movie-summary
-                    /compare-movies
-                              |
-                              v
-                       Clients / Apps
+                            |
+                            v
+                    Data Cleaning Pipeline
+                            |
+                            v
+                -------------------------------
+                |                              |
+                v                              v
+          Baseline Model                 DistilBERT Model
+                -------------------------------
+                            |
+                            v
+                      FastAPI Backend
+                            |
+                            v
+                      Clients / Apps
+
 ```
 
 ## Summary
 
-This project builds a complete sentiment analysis system for Letterboxd reviews using both a TF-IDF baseline and a DistilBERT transformer. It handles noisy rating-based labels with strict filtering and includes a small human-labelled set for real evaluation. Everything is served through a FastAPI backend with endpoints for text analysis, movie summaries, and comparisons.
+This project puts together a full sentiment workflow for Letterboxd reviews:
+
+- raw data cleaning
+- strict weak-label generation
+- baseline (TF-IDF + LR)
+- transformer (DistilBERT with SST-2 warm-up)
+- a small human-labeled test set
+- a FastAPI API for real-time predictions
+
+It shows how models respond to noisy labels, how much transformers help, and how an end-to-end pipeline looks when built from real user-generated text.
